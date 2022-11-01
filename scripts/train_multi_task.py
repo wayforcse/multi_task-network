@@ -162,6 +162,7 @@ def train(data, mdl_path):
     X_train = data[0]
     Y_train = data[1]
     C_train = data[2]
+    print(C_train.shape)
     X_test = data[3]
     Y_test = data[4]
     C_test = data[5]

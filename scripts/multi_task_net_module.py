@@ -55,11 +55,10 @@ def my_loss(y_true, y_pred,verify_feature):
 def DiceLoss(y_true, y_pred, smooth=1e-6):
     
     #flatten label and prediction tensors
-    y_pred = K.flatten(y_pred)
-    y_true = K.flatten(y_true)
-    
-    intersection = K.sum(K.dot(y_true, y_pred))
-    dice = (2*intersection + smooth) / (K.sum(y_true) + K.sum(y_pred) + smooth)
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    dice = (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
     return 1 - dice
 
 def acc(y_true, y_pred):
@@ -133,7 +132,7 @@ class Vnet_module(object):
         x = Activation('relu')(x)
 
         #deblock 3
-        x_c = concatenate([x, c], axis=-1)
+        x_c = concatenate([x, c], axis=-1, name = 'concat1')
         x_c = Conv3D(256, (3, 3, 3), padding='same', activation = None)(x_c)
         x_c = BatchNormalization()(x_c)
         x_c = Activation('relu')(x_c)
@@ -141,21 +140,19 @@ class Vnet_module(object):
         x_c = BatchNormalization()(x_c)
         x_c = Activation('relu')(x_c)
         x = x_c
-        # x = add([x, x_c])
         x = UpSampling3D(size=(2, 2, 2))(x)
         x = Conv3D(256, (2, 2, 2), strides = 1, padding = 'same', activation = None)(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
         #deblock 2
-        x_b = concatenate([x, b], axis=-1)
+        x_b = concatenate([x, b], axis=-1, name = 'concat2')
         x_b = Conv3D(128, (3, 3, 3), padding='same', activation = None)(x_b)
         x_b = BatchNormalization()(x_b)
         x_b = Activation('relu')(x_b)
         x_b = Conv3D(128, (3, 3, 3), padding='same', activation = None)(x_b)
         x_b = BatchNormalization()(x_b)
         x_b = Activation('relu')(x_b)
-        # x = add([x, x_b])
         x = x_b
         x = UpSampling3D(size=(2, 2, 2))(x)
         x = Conv3D(128, (2, 2, 2), strides = 1, padding = 'same', activation = None)(x)
@@ -163,7 +160,7 @@ class Vnet_module(object):
         x = Activation('relu')(x)
 
         #deblock 1
-        x_a = concatenate([x, a], axis=-1)
+        x_a = concatenate([x, a], axis=-1, name = 'concat3')
         x_a = Conv3D(64, (3, 3, 3), padding='same', activation = None)(x_a)
         x_a = BatchNormalization()(x_a)
         x_a = Activation('relu')(x_a)
@@ -171,13 +168,13 @@ class Vnet_module(object):
         x_a = BatchNormalization()(x_a)
         x_a = Activation('relu')(x_a)
         # x = add([x, x_a])
-        x = x_b
+        x = x_a
         x = Conv3D(1, (1, 1, 1), padding='same', activation='sigmoid', name='frame_output')(x)
 
         return x
 
     def class_head(self, x):
-        x = GlobalAveragePooling3D(name = 'GAP')(x)
+        # x = GlobalAveragePooling3D(name = 'GAP')(x)
         x = Flatten()(x)
         x = Dense(256,activation='relu',kernel_regularizer=l2(0.0002))(x)
         x = Dense(256,activation='relu',kernel_regularizer=l2(0.0002))(x)
@@ -222,7 +219,7 @@ class Vnet_module(object):
                 'class_output':c_loss}
         lossWeights={'frame_output':1,
                 'class_output':1}
-        accs={'frame_output':f_acc
+        accs={'frame_output':f_acc,
                 'class_output':c_acc}
  
 

@@ -214,7 +214,7 @@ class Vnet_module(object):
 
         # Since UCSD has no void label, we do not need to filter out
         c_loss = d_loss
-        f_loss = loss
+        f_loss = DiceLoss
         c_acc = d_acc
         f_acc = acc
 

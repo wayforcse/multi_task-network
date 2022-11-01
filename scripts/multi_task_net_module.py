@@ -51,6 +51,18 @@ def my_loss(y_true, y_pred,verify_feature):
 
     
     return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)+K.mean(K.binary_crossentropy(y_true, verify_feature), axis=-1)   
+def DiceBCELoss(targets, inputs, smooth=1e-6):    
+       
+    #flatten label and prediction tensors
+    inputs = K.flatten(inputs)
+    targets = K.flatten(targets)
+    
+    BCE =  binary_crossentropy(targets, inputs)
+    intersection = K.sum(K.dot(targets, inputs))    
+    dice_loss = 1 - (2*intersection + smooth) / (K.sum(targets) + K.sum(inputs) + smooth)
+    Dice_BCE = BCE + dice_loss
+    
+    return Dice_BCE
 
 def DiceLoss(y_true, y_pred, smooth=1e-6):
     
@@ -211,7 +223,7 @@ class Vnet_module(object):
 
         # Since UCSD has no void label, we do not need to filter out
         c_loss = d_loss
-        f_loss = DiceLoss
+        f_loss = DiceBCELoss
         c_acc = d_acc
         f_acc = acc
 

@@ -21,9 +21,9 @@ import pandas as pd
 # For each video sequence, we pick only 1000frames where res > 400
 # You may modify according to your memory/cpu spec.
 folder_num = 10
-annotation = r'E:\NCKU\way\FgSegNet_v2-master\annotations.csv'
-class_annotation = r'E:\NCKU\way\annotationdetclsconvfnl_v3.csv'
-local_annotation = r'E:\NCKU\way\annotations.csv'
+annotation = r'D:\IDIP\multi_task\annotations.csv'
+# class_annotation = r'E:\NCKU\way\annotationdetclsconvfnl_v3.csv'
+# local_annotation = r'E:\NCKU\way\annotations.csv'
 
 crop_size = 80
 
@@ -146,6 +146,42 @@ def getData(ct_path, lung_mask_path, nodule_mask_path, dicom_path, folder):
                 
     return [X, nodule_name, local_list]
 
+def make_mask(ct_path, mask_list, local_list, file_name):
+    threshold = 0.5
+    name = os.path.join(ct_path, file_name)
+    shape = np.load(name).shape
+
+    mask = np.zeros(shape, dtype = 'uint8')
+
+    for i in range(len(mask_list)):
+        mask_list[i][mask_list[i]>=threshold]=1
+        mask_list[i][mask_list[i]<threshold]=0
+
+        x = local_list[i][0]
+        y = local_list[i][1]
+        z = local_list[i][2]
+
+        if (z-crop_size//2 >= 0 and z+crop_size//2 < shape[0]) and (y-crop_size//2 >= 0 and y+crop_size//2 < shape[1]) and (x-crop_size//2 >= 0 and x+crop_size//2 < shape[2]):
+            mask[z-crop_size//2:z+crop_size//2, y-crop_size//2:y+crop_size//2, x-crop_size//2:x+crop_size//2] = mask_list[i]
+        else:
+            if z-crop_size//2 < 0:
+                z = crop_size//2
+            elif z+crop_size//2 >= shape[0]:
+                z = shape[0]-crop_size//2-1
+            if y-crop_size//2 < 0:
+                y = crop_size//2
+            elif y+crop_size//2 >= shape[1]:
+                y = shape[1]-crop_size//2-1
+            if x-crop_size//2 < 0:
+                x = crop_size//2
+            elif x+crop_size//2 >= shape[2]:
+                x = shape[2]-crop_size//2-1
+            mask[z-crop_size//2:z+crop_size//2, y-crop_size//2:y+crop_size//2, x-crop_size//2:x+crop_size//2] = mask_list[i]
+
+    return mask
+
+
+
 # model dir
 main_mdl_dir = os.path.join('FgSegNet_v2', 'Luna16', 'models')
 
@@ -153,12 +189,15 @@ main_mdl_dir = os.path.join('FgSegNet_v2', 'Luna16', 'models')
 results_dir = os.path.join('FgSegNet_v2', 'Luna16', 'results_ori')
 
 if __name__ == '__main__':
+    model_name = 'DiceBCE'
 
     dicom_path = r'D:\way\luna16\luna16_ct'
 
     ct_path = r'D:\way\Luna\npy\luna16_ct_spacing_npy'
     lung_mask_path = r'D:\way\Luna\npy\LiDC_lung_mask_spacing_npy'
     nodule_mask_path = r'D:\way\Luna\npy\LiDC_c3or_mask_spacing_npy'
+
+    result_path = r'D:\IDIP\multi_task\result'
 
     for i in range(folder_num):
         mdl_path = os.path.join(main_mdl_dir, 'mdl_' + 'folder' + str(i) + '.h5')
@@ -177,13 +216,24 @@ if __name__ == '__main__':
 
         Y_proba = model.predict(input_crop, batch_size=1, verbose=1)
 
-        crop_pred = Y_proba[0]
-        class_pred = Y_proba[1]
+        crop_pred = Y_proba
+        # class_pred = Y_proba[1]
 
         shape = crop_pred.shape
         print(shape)
 
         crop_pred = crop_pred.reshape([shape[0], shape[1], shape[2], shape[3]])
+        save_path = os.path.join(result_path,model_name,'folder' + str(i))
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+        for n in nodule_name:
+            idx = np.where(nodule_name==n)[0]
+            mask_list = crop_pred[idx]
+            local = local_list[idx]
+            mask = make_mask(ct_path, mask_list, local, n)
+            np.save(os.path.join(save_path,n), mask)
+
 
 
 

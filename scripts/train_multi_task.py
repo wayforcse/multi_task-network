@@ -207,7 +207,7 @@ if __name__ == '__main__':
 
         data = getData(ct_path, lung_mask_path, nodule_mask_path, dicom_path, i)
 
-        mdl_path = os.path.join(mdl_dir, 'mdl_' + 'multi_task_folder' + str(i) + '.h5')
+        mdl_path = os.path.join(mdl_dir, 'mdl_' + 'multi_task_DiceBDE_folder' + str(i) + '.h5')
         train(data, mdl_path)
         del data
         

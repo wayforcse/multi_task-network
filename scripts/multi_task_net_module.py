@@ -51,14 +51,14 @@ def my_loss(y_true, y_pred,verify_feature):
 
     
     return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)+K.mean(K.binary_crossentropy(y_true, verify_feature), axis=-1)   
-def DiceBCELoss(targets, inputs, smooth=1e-6):    
+def DiceBCELoss(y_true, y_pred, smooth=1e-6):    
        
     #flatten label and prediction tensors
-    inputs = K.flatten(inputs)
-    targets = K.flatten(targets)
+    inputs = K.flatten(y_pred)
+    targets = K.flatten(y_true)
     
-    BCE =  binary_crossentropy(targets, inputs)
-    intersection = K.sum(K.dot(targets, inputs))    
+    BCE =  loss(y_true, y_pred)
+    intersection = K.sum(targets * inputs)    
     dice_loss = 1 - (2*intersection + smooth) / (K.sum(targets) + K.sum(inputs) + smooth)
     Dice_BCE = BCE + dice_loss
     

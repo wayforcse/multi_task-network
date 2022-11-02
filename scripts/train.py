@@ -50,9 +50,9 @@ if keras.__version__!= '2.0.6' or tf.__version__!='1.1.0' or sys.version_info[0]
 
 # Few training frames, it may fit in memory
 folder_num = 10
-annotation = r'E:\NCKU\way\FgSegNet_v2-master\annotations.csv'
-class_annotation = r'E:\NCKU\way\annotationdetclsconvfnl_v3.csv'
-local_annotation = r'E:\NCKU\way\annotations.csv'
+annotation = r'D:\way\multi_task\annotations.csv'
+# class_annotation = r'E:\NCKU\way\annotationdetclsconvfnl_v3.csv'
+# local_annotation = r'E:\NCKU\way\annotations.csv'
 
 crop_size = 80
 
@@ -197,71 +197,10 @@ def train(data, mdl_path):
     K.clear_session()
     del model, data, early, redu
 
-
-# =============================================================================
-# Main func
-# =============================================================================
-#fail at nightVideos / streetCornerAtNight
-
-# dataset = {
-
-#             'baseline':['highway', 'pedestrians', 'office', 'PETS2006'],
-#             'cameraJitter':['badminton', 'traffic', 'boulevard', 'sidewalk'],
-#             'badWeather':['skating', 'blizzard', 'snowFall', 'wetSnow'],
-#             'dynamicBackground':['boats', 'canoe', 'fall', 'fountain01', 'fountain02', 'overpass'],
-#             'intermittentObjectMotion':['abandonedBox', 'parking', 'sofa', 'streetLight', 'tramstop', 'winterDriveway'],
-#             'lowFramerate':['port_0_17fps', 'tramCrossroad_1fps', 'tunnelExit_0_35fps', 'turnpike_0_5fps'],
-#             'nightVideos':['bridgeEntry', 'busyBoulvard', 'fluidHighway', 'streetCornerAtNight', 'tramStation', 'winterStreet'],
-#             'PTZ':['continuousPan', 'intermittentPan', 'twoPositionPTZCam', 'zoomInZoomOut'],
-#             'shadow':['backdoor', 'bungalows', 'busStation', 'copyMachine', 'cubicle', 'peopleInShade'],
-#             'thermal':['corridor', 'diningRoom', 'lakeSide', 'library', 'park'],
-#             'turbulence':['turbulence0', 'turbulence1', 'turbulence2', 'turbulence3']
-# }
-
-
-
-
-
-# main_dir = os.path.join('..', 'FgSegNet_v2')
-# # vgg_weights_path = 'vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5'
-# # if not os.path.exists(vgg_weights_path):
-# #     WEIGHTS_PATH_NO_TOP = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5'
-# #     vgg_weights_path = get_file('vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5',
-# #                                 WEIGHTS_PATH_NO_TOP, cache_subdir='models',
-# #                                 file_hash='6d6bbae143d832006294945121d1f1fc')
-
-
-# # =============================================================================
-# num_frames = 25 # either 2 or 10 or 25 or 200 training frames
-# # =============================================================================
-
-# # assert num_frames in [2,10,25,200], 'num_frames is incorrect.'
-# main_mdl_dir = os.path.join(main_dir, 'CDnet', 'models' + str(num_frames))
-# for category, scene_list in dataset.items():
-#     mdl_dir = os.path.join(main_mdl_dir, category)
-#     if not os.path.exists(mdl_dir):
-#         os.makedirs(mdl_dir)
-
-#     for scene in scene_list:
-#         print ('Training ->>> ' + category + ' / ' + scene)
-        
-#         train_dir = os.path.join('..', 'training_sets', 'CDnet2014_train', category, scene + str(num_frames))
-#         dataset_dir = os.path.join('..', 'datasets', 'CDnet2014_dataset', category, scene)
-#         # superpixel_dir = os.path.join('..', 'datasets', 'superpixel_label', category, scene)
-#         print(train_dir)
-#         print(dataset_dir)
-#         # print(superpixel_dir)
-#         data = getData(train_dir, dataset_dir)
-
-#         mdl_path = os.path.join(mdl_dir, 'mdl_' + scene + '.h5')
-#         train(data, scene, mdl_path, vgg_weights_path)
-#         del data
-        
-#     gc.collect()
 if __name__ == '__main__':
-    ct_path = r'E:\NCKU\Luna\npy\luna16_ct_spacing_npy'
-    lung_mask_path = r'E:\NCKU\Luna\npy\LiDC_lung_mask_spacing_npy'
-    nodule_mask_path = r'E:\NCKU\Luna\npy\LiDC_c3or_mask_spacing_npy'
+    ct_path = r'D:\way\Luna\npy\luna16_ct_spacing_npy'
+    lung_mask_path = r'D:\way\Luna\npy\LiDC_lung_mask_spacing_npy'
+    nodule_mask_path = r'D:\way\Luna\npy\LiDC_c3or_mask_spacing_npy'
 
     dicom_path = r'E:\NCKU\way\vnet.pytorch-master\luna16\luna16_ct'
 

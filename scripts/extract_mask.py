@@ -88,29 +88,6 @@ def generateData(scene_input_path, X_list, scene):
     del img, x, X_list
     X = np.asarray(X)
     print ('\nShape' + str(X.shape))
-    
-# For FgSegNet (multi-scale)
-#    s2 = []
-#    s3 = []
-#    num_img = X.shape[0]
-#    prev = 0
-#    print ('\t- Downscale frames:')
-#    for i in range(0, num_img):
-#       pyramid = tuple(pyramid_gaussian(X[i]/255., max_layer=2, downscale=2))
-#       s2.append(pyramid[1]*255.)
-#       s3.append(pyramid[2]*255.)
-#       sys.stdout.write('\b' * prev)
-#       sys.stdout.write('\r')
-#       s = str(i+1)
-#       sys.stdout.write(s)
-#       prev = len(s)
-#       del pyramid
-#    s2 = np.asarray(s2)
-#    s3 = np.asarray(s3)
-#    print ('\n')
-#    print (s1.shape, s2.shape, s3.shape)
-
-#    return [X, s2, s3] #return for FgSegNet (multi-scale)
 
     return X #return for FgSegNet_v2
 
@@ -177,11 +154,11 @@ results_dir = os.path.join('FgSegNet_v2', 'Luna16', 'results_ori')
 
 if __name__ == '__main__':
 
-    dicom_path = r'E:\NCKU\way\vnet.pytorch-master\luna16\luna16_ct'
+    dicom_path = r'D:\way\luna16\luna16_ct'
 
-    ct_path = r'E:\NCKU\Luna\npy\luna16_ct_spacing_npy'
-    lung_mask_path = r'E:\NCKU\Luna\npy\LiDC_lung_mask_spacing_npy'
-    nodule_mask_path = r'E:\NCKU\Luna\npy\LiDC_c3or_mask_spacing_npy'
+    ct_path = r'D:\way\Luna\npy\luna16_ct_spacing_npy'
+    lung_mask_path = r'D:\way\Luna\npy\LiDC_lung_mask_spacing_npy'
+    nodule_mask_path = r'D:\way\Luna\npy\LiDC_c3or_mask_spacing_npy'
 
     for i in range(folder_num):
         mdl_path = os.path.join(main_mdl_dir, 'mdl_' + 'folder' + str(i) + '.h5')
@@ -193,6 +170,23 @@ if __name__ == '__main__':
         model = load_model(mdl_path)
 
         data = getData(ct_path, lung_mask_path, nodule_mask_path, dicom_path, i)
+
+        input_crop = data[0]
+        nodule_name = data[1]
+        local_list = data[2]
+
+        Y_proba = model.predict(input_crop, batch_size=1, verbose=1)
+
+        crop_pred = Y_proba[0]
+        class_pred = Y_proba[1]
+
+        shape = crop_pred.shape
+        print(shape)
+
+        crop_pred = crop_pred.reshape([shape[0], shape[1], shape[2], shape[3]])
+
+
+
 
 
 # Loop through all categories (e.g. baseline)

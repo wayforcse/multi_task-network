@@ -31,30 +31,14 @@ def loss(y_true, y_pred):
     y_true = tf.gather_nd(y_true, idx)
     return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)
 
-def my_loss(y_true, y_pred,verify_feature):
-    void_label = -1.
-    y_pred = K.reshape(y_pred, [-1])
-    #y_true,superpixel=tf.split(y_true, 2, axis=3, num=None)
-    y_true = K.reshape(y_true, [-1])##chanfe into Tensor
-    idx = tf.where(tf.not_equal(y_true, tf.constant(void_label, dtype=tf.float32)))
-    y_pred = tf.gather_nd(y_pred, idx) 
-    y_true = tf.gather_nd(y_true, idx)
-
-    verify_feature=K.reshape(verify_feature, [-1])
-    verify_feature = tf.gather_nd(verify_feature, idx) 
-    
-
-    
-    return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)+K.mean(K.binary_crossentropy(y_true, verify_feature), axis=-1)   
-
-def DiceBCELoss(targets, inputs, smooth=1e-6):    
+def DiceBCELoss(y_true, y_pred, smooth=1e-6):    
        
     #flatten label and prediction tensors
-    inputs = K.flatten(inputs)
-    targets = K.flatten(targets)
+    inputs = K.flatten(y_pred)
+    targets = K.flatten(y_true)
     
-    BCE =  binary_crossentropy(targets, inputs)
-    intersection = K.sum(K.dot(targets, inputs))    
+    BCE =  loss(y_true, y_pred)
+    intersection = K.sum(targets * inputs)   
     dice_loss = 1 - (2*intersection + smooth) / (K.sum(targets) + K.sum(inputs) + smooth)
     Dice_BCE = BCE + dice_loss
     
@@ -209,16 +193,14 @@ class Vnet_module(object):
         opt = keras.optimizers.RMSprop(lr = self.lr, rho=0.9, epsilon=1e-08, decay=0.)
 
         # Since UCSD has no void label, we do not need to filter out
-        if dataset_name == 'UCSD':
-            c_loss = loss2
-            c_acc = acc2
-        else:
-            c_loss = loss
-            c_acc = acc
+        # c_loss = d_loss
+        f_loss = DiceBCELoss
+        # c_acc = d_acc
+        f_acc = acc
 
-        losses ={'frame_output':c_loss}
+        losses ={'frame_output':f_loss}
         lossWeights={'frame_output':1}
-        accs={'frame_output':c_acc}
+        accs={'frame_output':f_acc}
  
 
 

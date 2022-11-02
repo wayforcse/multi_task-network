@@ -47,14 +47,26 @@ def my_loss(y_true, y_pred,verify_feature):
     
     return K.mean(K.binary_crossentropy(y_true, y_pred), axis=-1)+K.mean(K.binary_crossentropy(y_true, verify_feature), axis=-1)   
 
+def DiceBCELoss(targets, inputs, smooth=1e-6):    
+       
+    #flatten label and prediction tensors
+    inputs = K.flatten(inputs)
+    targets = K.flatten(targets)
+    
+    BCE =  binary_crossentropy(targets, inputs)
+    intersection = K.sum(K.dot(targets, inputs))    
+    dice_loss = 1 - (2*intersection + smooth) / (K.sum(targets) + K.sum(inputs) + smooth)
+    Dice_BCE = BCE + dice_loss
+    
+    return Dice_BCE
+
 def DiceLoss(y_true, y_pred, smooth=1e-6):
     
     #flatten label and prediction tensors
-    y_pred = K.flatten(y_pred)
-    y_true = K.flatten(y_true)
-    
-    intersection = K.sum(K.dot(y_true, y_pred))
-    dice = (2*intersection + smooth) / (K.sum(y_true) + K.sum(y_pred) + smooth)
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    dice = (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
     return 1 - dice
 
 def acc(y_true, y_pred):
@@ -87,14 +99,7 @@ class Vnet_module(object):
         x = Conv3D(64, (3, 3, 3), padding='same', activation = None, data_format='channels_last')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x_a = Conv3D(8, (5, 5, 5), padding='same', activation = None, data_format='channels_last')(x)
-        # x_a = BatchNormalization()(x_a)
-        # x_a = PReLU()(x_a)
-        # x = add([x, x_a])
         a = x
-        # x = Conv3D(16, (2, 2, 1), strides=2, activation = None)(x)
-        # x = BatchNormalization()(x)
-        # x = PReLU()(x)
         x = MaxPooling3D((2, 2, 2), strides = 2)(x)
 
         #block 2
@@ -104,17 +109,7 @@ class Vnet_module(object):
         x = Conv3D(128, (3, 3, 3), padding='same', activation = None, data_format='channels_last')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x_b = Conv3D(16, (5, 5, 5), padding='same', activation = None)(x)
-        # x_b = BatchNormalization()(x_b)
-        # x_b = PReLU()(x_b)
-        # x_b = Conv3D(16, (5, 5, 5), padding='same', activation = None)(x_b)
-        # x_b = BatchNormalization()(x_b)
-        # x_b = PReLU()(x_b)
-        # x = add([x, x_b])
         b = x
-        # x = Conv3D(32, (2, 2, 1), strides=2, activation = None)(x)
-        # x = BatchNormalization()(x)
-        # x = PReLU()(x)
         x = MaxPooling3D((2, 2, 2), strides = 2)(x)
 
         #block 3
@@ -124,20 +119,7 @@ class Vnet_module(object):
         x = Conv3D(256, (3, 3, 3), padding='same', activation = None, data_format='channels_last')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x_c = Conv3D(32, (5, 5, 5), padding='same', activation = None)(x)
-        # x_c = BatchNormalization()(x_c)
-        # x_c = PReLU()(x_c)
-        # x_c = Conv3D(32, (5, 5, 5), padding='same', activation = None)(x_c)
-        # x_c = BatchNormalization()(x_c)
-        # x_c = PReLU()(x_c)
-        # x_c = Conv3D(32, (5, 5, 5), padding='same', activation = None)(x_c)
-        # x_c = BatchNormalization()(x_c)
-        # x_c = PReLU()(x_c)
-        # x = add([x, x_c])
         c = x
-        # x = Conv3D(64, (2, 2, 1), strides=2, activation = None)(x)
-        # x = BatchNormalization()(x)
-        # x = PReLU()(x)
         x = MaxPooling3D((2, 2, 2), strides = 2)(x)
 
         #block 4
@@ -147,20 +129,6 @@ class Vnet_module(object):
         x = Conv3D(512, (3, 3, 3), padding='same', activation = None, data_format='channels_last')(x)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
-        # x_d = Conv3D(64, (5, 5, 5), padding='same', activation = None)(x)
-        # x_d = BatchNormalization()(x_d)
-        # x_d = PReLU()(x_d)
-        # x_d = Conv3D(64, (5, 5, 5), padding='same', activation = None)(x_d)
-        # x_d = BatchNormalization()(x_d)
-        # x_d = PReLU()(x_d)
-        # x_d = Conv3D(64, (5, 5, 5), padding='same', activation = None)(x_d)
-        # x_d = BatchNormalization()(x_d)
-        # x_d = PReLU()(x_d)
-        # x = add([x, x_d])
-        # d = x
-        # x = Conv3D(256, (2, 2, 1), strides=2, activation = None)(x)
-        # x = BatchNormalization()(x)
-        # x = PReLU()(x)
 
 
         return x, a, b, c
@@ -210,7 +178,7 @@ class Vnet_module(object):
         x_a = BatchNormalization()(x_a)
         x_a = Activation('relu')(x_a)
         # x = add([x, x_a])
-        x = x_b
+        x = x_a
         x = Conv3D(1, (1, 1, 1), padding='same', activation='sigmoid', name='frame_output')(x)
 
         return x

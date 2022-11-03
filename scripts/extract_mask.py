@@ -191,7 +191,7 @@ main_mdl_dir = os.path.join('..','FgSegNet_v2', 'Luna16', 'models')
 results_dir = os.path.join('..','FgSegNet_v2', 'Luna16', 'results_ori')
 
 if __name__ == '__main__':
-    model_name = 'DiceBCE'
+    model_name = 'Dice'
 
     dicom_path = r'D:\IDIP\luna16\luna16_ct'
 
@@ -203,10 +203,10 @@ if __name__ == '__main__':
 
     # for i in range(folder_num):
     for i in range(1):
-        mdl_path = os.path.join(main_mdl_dir, 'folder' + str(i), 'mdl_multi_task_DiceBDE_' + 'folder' + str(i) + '.h5')
-        mask_dir = os.path.join(results_dir, 'folder' + str(i))
-        if not os.path.exists(mask_dir):
-            os.makedirs(mask_dir)
+        mdl_path = os.path.join(main_mdl_dir, 'folder' + str(i), 'mdl_multi_task_' + 'folder' + str(i) + '.h5')
+        # mask_dir = os.path.join(results_dir, 'folder' + str(i))
+        # if not os.path.exists(mask_dir):
+        #     os.makedirs(mask_dir)
 
         # load model to segment
         model = load_model(mdl_path, compile=False, custom_objects = {'DiceBCELoss':DiceBCELoss, 'd_loss':d_loss, 'd_acc':d_acc, 'acc':acc})
@@ -229,12 +229,13 @@ if __name__ == '__main__':
         save_path = os.path.join(result_path,model_name,'folder' + str(i))
         if not os.path.exists(save_path):
             os.makedirs(save_path)
+        ct_folder_path = os.path.join(ct_path, 'subset'+str(i))
 
         for n in nodule_name:
             idx = np.where(nodule_name==n)[0]
             mask_list = crop_pred[idx]
             local = local_list[idx]
-            mask = make_mask(ct_path, mask_list, local, n)
+            mask = make_mask(ct_folder_path, mask_list, local, n)
             np.save(os.path.join(save_path,n), mask)
 
 

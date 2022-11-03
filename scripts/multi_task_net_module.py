@@ -221,7 +221,6 @@ class Vnet_module(object):
         vision_model = Model(inputs=net_input, outputs=[x,class_output], name='vision_model')
         opt = keras.optimizers.RMSprop(lr = self.lr, rho=0.9, epsilon=1e-08, decay=0.)
 
-        # Since UCSD has no void label, we do not need to filter out
         c_loss = d_loss
         f_loss = DiceBCELoss
         c_acc = d_acc

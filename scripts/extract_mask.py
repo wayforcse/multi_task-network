@@ -12,9 +12,12 @@ import os, glob, sys
 from tensorflow.python.keras.preprocessing import image as kImage
 #from skimage.transform import pyramid_gaussian
 from tensorflow.python.keras.models import load_model
-from scipy.misc import imsave#, imresize
+# from scipy.misc import imsave#, imresize
 import gc
 import pandas as pd
+from keras.utils.generic_utils import get_custom_objects
+
+from multi_task_net_module import d_loss, d_acc, acc, DiceBCELoss, DiceLoss
 
 
 # Optimize to avoid memory exploding. 
@@ -51,7 +54,6 @@ def crop_nodule(npy, x, y, z, size):
 
 def checkFrame(l):
     num_frames = len(X_list) # 7000
-    max_cube =  # max frames to slice
     if(img[1]>=400 and len(X_list)>max_frames):
         print ('\t- Total Frames:' + str(num_frames))
         num_chunks = num_frames/max_frames
@@ -183,30 +185,31 @@ def make_mask(ct_path, mask_list, local_list, file_name):
 
 
 # model dir
-main_mdl_dir = os.path.join('FgSegNet_v2', 'Luna16', 'models')
+main_mdl_dir = os.path.join('..','FgSegNet_v2', 'Luna16', 'models')
 
 # path to store results
-results_dir = os.path.join('FgSegNet_v2', 'Luna16', 'results_ori')
+results_dir = os.path.join('..','FgSegNet_v2', 'Luna16', 'results_ori')
 
 if __name__ == '__main__':
     model_name = 'DiceBCE'
 
-    dicom_path = r'D:\way\luna16\luna16_ct'
+    dicom_path = r'D:\IDIP\luna16\luna16_ct'
 
-    ct_path = r'D:\way\Luna\npy\luna16_ct_spacing_npy'
-    lung_mask_path = r'D:\way\Luna\npy\LiDC_lung_mask_spacing_npy'
-    nodule_mask_path = r'D:\way\Luna\npy\LiDC_c3or_mask_spacing_npy'
+    ct_path = r'D:\IDIP\Luna\npy\luna16_ct_spacing_npy'
+    lung_mask_path = r'D:\IDIP\Luna\npy\LiDC_lung_mask_spacing_npy'
+    nodule_mask_path = r'D:\IDIP\Luna\npy\LiDC_c3or_mask_spacing_npy'
 
     result_path = r'D:\IDIP\multi_task\result'
 
-    for i in range(folder_num):
-        mdl_path = os.path.join(main_mdl_dir, 'mdl_' + 'folder' + str(i) + '.h5')
+    # for i in range(folder_num):
+    for i in range(1):
+        mdl_path = os.path.join(main_mdl_dir, 'folder' + str(i), 'mdl_multi_task_DiceBDE_' + 'folder' + str(i) + '.h5')
         mask_dir = os.path.join(results_dir, 'folder' + str(i))
         if not os.path.exists(mask_dir):
             os.makedirs(mask_dir)
 
         # load model to segment
-        model = load_model(mdl_path)
+        model = load_model(mdl_path, compile=False, custom_objects = {'DiceBCELoss':DiceBCELoss, 'd_loss':d_loss, 'd_acc':d_acc, 'acc':acc})
 
         data = getData(ct_path, lung_mask_path, nodule_mask_path, dicom_path, i)
 
@@ -216,7 +219,7 @@ if __name__ == '__main__':
 
         Y_proba = model.predict(input_crop, batch_size=1, verbose=1)
 
-        crop_pred = Y_proba
+        crop_pred = Y_proba[0]
         # class_pred = Y_proba[1]
 
         shape = crop_pred.shape
@@ -239,123 +242,123 @@ if __name__ == '__main__':
 
 
 
-# Loop through all categories (e.g. baseline)
-for category, scene_list in dataset.items():
-    # Loop through all scenes (e.g. highway, ...)
-    for scene in scene_list:
-        print ('\n->>> ' + category + ' / ' + scene)
-        mdl_path = os.path.join(main_mdl_dir, category , 'mdl_' + scene + '.h5')
+# # Loop through all categories (e.g. baseline)
+# for category, scene_list in dataset.items():
+#     # Loop through all scenes (e.g. highway, ...)
+#     for scene in scene_list:
+#         print ('\n->>> ' + category + ' / ' + scene)
+#         mdl_path = os.path.join(main_mdl_dir, category , 'mdl_' + scene + '.h5')
         
-        mask_dir = os.path.join(results_dir, category, scene)
-        if not os.path.exists(mask_dir):
-            os.makedirs(mask_dir)
+#         mask_dir = os.path.join(results_dir, category, scene)
+#         if not os.path.exists(mask_dir):
+#             os.makedirs(mask_dir)
         
-        # path of dataset downloaded from CDNet
-        scene_input_path = os.path.join(raw_dataset_dir, category, scene, 'input')
-        # path of ROI to exclude non-ROI
-        # make sure that each scene contains ROI.bmp and have the same dimension as raw RGB frames
-        ROI_file = os.path.join(raw_dataset_dir, category, scene, 'ROI.bmp')
+#         # path of dataset downloaded from CDNet
+#         scene_input_path = os.path.join(raw_dataset_dir, category, scene, 'input')
+#         # path of ROI to exclude non-ROI
+#         # make sure that each scene contains ROI.bmp and have the same dimension as raw RGB frames
+#         ROI_file = os.path.join(raw_dataset_dir, category, scene, 'ROI.bmp')
         
-        # refer to http://jacarini.dinf.usherbrooke.ca/datasetOverview/
-        img = kImage.load_img(ROI_file, grayscale=True)
-        img = kImage.img_to_array(img)
-        img = img.reshape(-1) # to 1D
-        idx = np.where(img == 0.)[0] # get the non-ROI, black area
-        del img
+#         # refer to http://jacarini.dinf.usherbrooke.ca/datasetOverview/
+#         img = kImage.load_img(ROI_file, grayscale=True)
+#         img = kImage.img_to_array(img)
+#         img = img.reshape(-1) # to 1D
+#         idx = np.where(img == 0.)[0] # get the non-ROI, black area
+#         del img
         
-        # load path of files
-        X_list = getFiles(scene_input_path)
-        if (X_list is None):
-            raise ValueError('X_list is None')
+#         # load path of files
+#         X_list = getFiles(scene_input_path)
+#         if (X_list is None):
+#             raise ValueError('X_list is None')
 
-        # slice frames
-        results = checkFrame(X_list)
+#         # slice frames
+#         results = checkFrame(X_list)
         
-        # load model to segment
-        model = load_model(mdl_path)
+#         # load model to segment
+#         model = load_model(mdl_path)
 
-        # if large numbers of frames, slice it
-        if(results[0]): 
-            for rangeee in results[1]: # for each slice
-                slice_X_list =  X_list[rangeee]
+#         # if large numbers of frames, slice it
+#         if(results[0]): 
+#             for rangeee in results[1]: # for each slice
+#                 slice_X_list =  X_list[rangeee]
 
-                # load frames for each slice
-                data = generateData(scene_input_path, slice_X_list, scene)
+#                 # load frames for each slice
+#                 data = generateData(scene_input_path, slice_X_list, scene)
                 
-                # For FgSegNet (multi-scale only) 
-                #Y_proba = model.predict([data[0], data[1], data[2]], batch_size=batch_size, verbose=1) # (xxx, 240, 320, 1)
+#                 # For FgSegNet (multi-scale only) 
+#                 #Y_proba = model.predict([data[0], data[1], data[2]], batch_size=batch_size, verbose=1) # (xxx, 240, 320, 1)
                 
-                # For FgSegNet_v2
-                Y_proba = model.predict(data, batch_size=1, verbose=1)
-                del data
+#                 # For FgSegNet_v2
+#                 Y_proba = model.predict(data, batch_size=1, verbose=1)
+#                 del data
 
-                # filter out
-                shape = Y_proba.shape
-                Y_proba = Y_proba.reshape([shape[0],-1])
-                if (len(idx)>0): # if have non-ROI
-                    for i in range(len(Y_proba)): # for each frames
-                        Y_proba[i][idx] = 0. # set non-ROI pixel to black
+#                 # filter out
+#                 shape = Y_proba.shape
+#                 Y_proba = Y_proba.reshape([shape[0],-1])
+#                 if (len(idx)>0): # if have non-ROI
+#                     for i in range(len(Y_proba)): # for each frames
+#                         Y_proba[i][idx] = 0. # set non-ROI pixel to black
                         
-                Y_proba = Y_proba.reshape([shape[0], shape[1], shape[2]])
+#                 Y_proba = Y_proba.reshape([shape[0], shape[1], shape[2]])
 
-                prev = 0
-                print ('\n- Saving frames:')
-                for i in range(shape[0]):
-                    fname = os.path.basename(slice_X_list[i]).replace('in','bin').replace('jpg','png')
-                    x = Y_proba[i]
+#                 prev = 0
+#                 print ('\n- Saving frames:')
+#                 for i in range(shape[0]):
+#                     fname = os.path.basename(slice_X_list[i]).replace('in','bin').replace('jpg','png')
+#                     x = Y_proba[i]
                     
-#                    if batch_size in [2,4] and scene=='badminton':
-#                        x = imresize(x, (480,720), interp='nearest')
-#                        
-#                    if batch_size in [2,4] and scene=='PETS2006':
-#                        x = imresize(x, (576,720), interp='nearest')
+# #                    if batch_size in [2,4] and scene=='badminton':
+# #                        x = imresize(x, (480,720), interp='nearest')
+# #                        
+# #                    if batch_size in [2,4] and scene=='PETS2006':
+# #                        x = imresize(x, (576,720), interp='nearest')
                     
-                    imsave(os.path.join(mask_dir, fname), x)
-                    sys.stdout.write('\b' * prev)
-                    sys.stdout.write('\r')
-                    s = str(i+1)
-                    sys.stdout.write(s)
-                    prev = len(s)
+#                     imsave(os.path.join(mask_dir, fname), x)
+#                     sys.stdout.write('\b' * prev)
+#                     sys.stdout.write('\r')
+#                     s = str(i+1)
+#                     sys.stdout.write(s)
+#                     prev = len(s)
                     
-                del Y_proba, slice_X_list
+#                 del Y_proba, slice_X_list
 
-        else: # otherwise, no need to slice
-            data = generateData(scene_input_path, X_list, scene)
+#         else: # otherwise, no need to slice
+#             data = generateData(scene_input_path, X_list, scene)
             
-            # For FgSegNet (multi-scale)
-            #Y_proba = model.predict([data[0], data[1], data[2]], batch_size=batch_size, verbose=1) # (xxx, 240, 320, 1)
+#             # For FgSegNet (multi-scale)
+#             #Y_proba = model.predict([data[0], data[1], data[2]], batch_size=batch_size, verbose=1) # (xxx, 240, 320, 1)
             
-            # For FgSegNet_v2
-            Y_proba = model.predict(data, batch_size=1, verbose=1)
+#             # For FgSegNet_v2
+#             Y_proba = model.predict(data, batch_size=1, verbose=1)
             
-            del data
-            shape = Y_proba.shape
-            Y_proba = Y_proba.reshape([shape[0],-1])
-            if (len(idx)>0): # if have non-ROI
-                    for i in range(len(Y_proba)): # for each frames
-                        Y_proba[i][idx] = 0. # set non-ROI pixel to black
+#             del data
+#             shape = Y_proba.shape
+#             Y_proba = Y_proba.reshape([shape[0],-1])
+#             if (len(idx)>0): # if have non-ROI
+#                     for i in range(len(Y_proba)): # for each frames
+#                         Y_proba[i][idx] = 0. # set non-ROI pixel to black
 
-            Y_proba = Y_proba.reshape([shape[0], shape[1], shape[2]])
+#             Y_proba = Y_proba.reshape([shape[0], shape[1], shape[2]])
             
-            prev = 0
-            print ('\n- Saving frames:')
-            for i in range(shape[0]):
-                fname = os.path.basename(X_list[i]).replace('in','bin').replace('jpg','png')
-                x = Y_proba[i]
+#             prev = 0
+#             print ('\n- Saving frames:')
+#             for i in range(shape[0]):
+#                 fname = os.path.basename(X_list[i]).replace('in','bin').replace('jpg','png')
+#                 x = Y_proba[i]
                 
-#                if batch_size in [2,4] and scene=='badminton':
-#                    x = imresize(x, (480,720), interp='nearest')
-#                
-#                if batch_size in [2,4] and scene=='PETS2006':
-#                        x = imresize(x, (576,720), interp='nearest')
+# #                if batch_size in [2,4] and scene=='badminton':
+# #                    x = imresize(x, (480,720), interp='nearest')
+# #                
+# #                if batch_size in [2,4] and scene=='PETS2006':
+# #                        x = imresize(x, (576,720), interp='nearest')
                         
-                imsave(os.path.join(mask_dir, fname), x)
-                sys.stdout.write('\b' * prev)
-                sys.stdout.write('\r')
-                s = str(i+1)
-                sys.stdout.write(s)
-                prev = len(s)
-            del Y_proba
-        del model, X_list, results
+#                 imsave(os.path.join(mask_dir, fname), x)
+#                 sys.stdout.write('\b' * prev)
+#                 sys.stdout.write('\r')
+#                 s = str(i+1)
+#                 sys.stdout.write(s)
+#                 prev = len(s)
+#             del Y_proba
+#         del model, X_list, results
 
-    gc.collect()
+#     gc.collect()
